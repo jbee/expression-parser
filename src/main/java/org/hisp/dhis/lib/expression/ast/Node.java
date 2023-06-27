@@ -7,6 +7,7 @@ import org.hisp.dhis.lib.expression.spi.Variable;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.*;
 import java.util.stream.Stream;
 
@@ -65,7 +66,6 @@ public interface Node<T> extends Typed, NodeAnnotations {
      */
     void visit(Consumer<Node<?>> visitor, Predicate<Node<?>> filter);
 
-
     /**
      * Visit a subtree but only nodes of the given {@link NodeType}.
      *
@@ -104,6 +104,30 @@ public interface Node<T> extends Typed, NodeAnnotations {
             child.walk(walker);
             last = child;
         }
+    }
+
+    /**
+     * Searches the tree for a node that matches the given filter criteria.
+     *
+     * @param filter the filter criteria to match
+     * @return the first node matching the given filter or null if no node matches
+     */
+    default Node<?> find(Predicate<Node<?>> filter) {
+        if (filter.test(this)) return this;
+        for (int i = 0; i < size(); i++) {
+            Node<?> match = child(i).find(filter);
+            if (match != null) return match;
+        }
+        return null;
+    }
+
+    /**
+     * Check if a node with a certain property does exist in the tree.
+     * @param filter the filter criteria to match
+     * @return true, if any node exist that matches the given filter criteria, else false
+     */
+    default boolean exists(Predicate<Node<?>> filter) {
+        return find(filter) != null;
     }
 
     /**
@@ -235,10 +259,7 @@ public interface Node<T> extends Typed, NodeAnnotations {
     }
 
     default Stream<ID> toIDs() {
-        DataItem item = toDataItem();
-        return item == null
-                ? Stream.empty()
-                : concat(concat(Stream.of(item.getUid0()), item.getUid1().stream()), item.getUid2().stream());
+        return Stream.empty();
     }
 
     default Variable toVariable() {

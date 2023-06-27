@@ -71,4 +71,10 @@ public enum NodeType {
         return isConstant() || this == NUMBER || this == INTEGER || this == STRING || this == DATE;
     }
 
+    /**
+     * @return true if the node type contains children that are UIDs.
+     */
+    public boolean isIdParent() {
+        return this == DATA_ITEM || this == FUNCTION;
+    }
 }

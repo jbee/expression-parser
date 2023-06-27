@@ -7,6 +7,7 @@ import org.hisp.dhis.lib.expression.ast.VariableType;
 import org.hisp.dhis.lib.expression.spi.*;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
@@ -96,8 +97,16 @@ public final class Evaluate {
     }
 
     public static Set<ID> collectUIDs(Node<?> root) {
+        return collectUIDs(root, node -> node.getType().isIdParent());
+    }
+
+    public static Set<ID> collectUIDs(Node<?> root, NodeType ofType, Enum<?> ofValue) {
+        return collectUIDs(root, node -> node.getType() == ofType && node.getValue() == ofValue);
+    }
+
+    private static HashSet<ID> collectUIDs(Node<?> root, Predicate<Node<?>> filter) {
         return root.aggregate(new HashSet<>(), Node::toIDs,
                 (set, ids) -> ids.filter(id -> id.getType().isUID()).forEach(set::add),
-                node -> node.getType() == NodeType.DATA_ITEM);
+                filter);
     }
 }

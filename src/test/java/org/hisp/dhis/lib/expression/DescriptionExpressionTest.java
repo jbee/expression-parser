@@ -36,6 +36,11 @@ class DescriptionExpressionTest {
         assertEquals("d2:hasValue(foo)", describe("d2:hasValue(#{AttributeA})", Map.of("AttributeA", "foo")));
     }
 
+    @Test
+    void functionsWithDataItem_DisplayName() {
+        assertEquals("d2:hasValue(#{foo})", describe("d2:hasValue(#{u1234567890})", Map.of("u1234567890", "foo")));
+    }
+
     private static String describe(String expression) {
         return describe(expression, Map.of());
     }

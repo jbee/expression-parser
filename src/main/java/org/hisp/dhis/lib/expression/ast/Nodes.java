@@ -4,7 +4,9 @@ import org.hisp.dhis.lib.expression.spi.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.*;
 import java.util.stream.Stream;
 
@@ -12,6 +14,7 @@ import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.concat;
 
 /**
  * Implements the different {@link Node} types in the AST.
@@ -255,6 +258,22 @@ public interface Nodes {
             ValueType type = getValue().getValueType();
             return !type.isSame() ? type : child(getValue().getParameterTypes().indexOf(ValueType.SAME)).getValueType();
         }
+
+        @Override
+        public Stream<ID> toIDs() {
+            return switch (getValue()) {
+                case orgUnit_ancestor -> collectUIDs(ID.Type.OrganisationUnitUID);
+                case orgUnit_group -> collectUIDs(ID.Type.OrganisationUnitGroupUID);
+                case orgUnit_dataSet -> collectUIDs(ID.Type.DataSetUID);
+                case orgUnit_program -> collectUIDs(ID.Type.ProgramUID);
+                default -> Stream.empty();
+            };
+        }
+
+        private Stream<ID> collectUIDs(ID.Type type) {
+            return aggregate(new ArrayList<ID>(), uid -> new ID(type, uid.getRawValue()), List::add,
+                    node -> node.getType() == NodeType.UID ).stream();
+        }
     }
 
     final class ModifierNode extends ComplexNode<DataItemModifier> {
@@ -301,30 +320,16 @@ public interface Nodes {
             modifiers.forEach(mod -> {
                 Supplier<Object> value = () -> mod.child(0).child(0).getValue();
                 switch ((DataItemModifier) mod.getValue()) {
-                    case aggregationType:
-                        mods.aggregationType((AggregationType) value.get());
-                        break;
-                    case maxDate:
-                        mods.maxDate((LocalDate) value.get());
-                        break;
-                    case minDate:
-                        mods.minDate((LocalDate) value.get());
-                        break;
-                    case periodOffset:
-                        mods.periodOffset(sum.apply(mods.build().getPeriodOffset(), (Integer) value.get()));
-                        break;
-                    case stageOffset:
-                        mods.stageOffset(sum.apply(mods.build().getStageOffset(), (Integer) value.get()));
-                        break;
-                    case yearToDate:
-                        mods.yearToDate(true);
-                        break;
-                    case periodAggregation:
-                        mods.periodAggregation(true);
-                        break;
-                    case subExpression:
-                        mods.subExpression((String) value.get());
-                        break;
+                    case aggregationType -> mods.aggregationType((AggregationType) value.get());
+                    case maxDate -> mods.maxDate((LocalDate) value.get());
+                    case minDate -> mods.minDate((LocalDate) value.get());
+                    case periodOffset ->
+                            mods.periodOffset(sum.apply(mods.build().getPeriodOffset(), (Integer) value.get()));
+                    case stageOffset ->
+                            mods.stageOffset(sum.apply(mods.build().getStageOffset(), (Integer) value.get()));
+                    case yearToDate -> mods.yearToDate(true);
+                    case periodAggregation -> mods.periodAggregation(true);
+                    case subExpression -> mods.subExpression((String) value.get());
                 }
             });
             return mods.build();
@@ -369,6 +374,12 @@ public interface Nodes {
             }
             value = new DataItem(itemType, idGroups.get(0).get(0), idGroups.get(1), idGroups.get(2), getQueryModifiers());
             return value;
+        }
+
+        @Override
+        public Stream<ID> toIDs() {
+            DataItem item = toDataItem();
+            return concat(concat(Stream.of(item.getUid0()), item.getUid1().stream()), item.getUid2().stream());
         }
     }
 
@@ -447,23 +458,12 @@ public interface Nodes {
                         str.appendCodePoint(parseInt(new String(new char[]{chars[++i], chars[++i], chars[++i]}), 8));
                     } else {
                         switch (c) {
-                            case 'b':
-                                str.append('\b');
-                                break;
-                            case 't':
-                                str.append('\t');
-                                break;
-                            case 'n':
-                                str.append('\n');
-                                break;
-                            case 'f':
-                                str.append('\f');
-                                break;
-                            case 'r':
-                                str.append('\r');
-                                break;
-                            default:
-                                str.append(c); // this is the escaped character
+                            case 'b' -> str.append('\b');
+                            case 't' -> str.append('\t');
+                            case 'n' -> str.append('\n');
+                            case 'f' -> str.append('\f');
+                            case 'r' -> str.append('\r');
+                            default -> str.append(c); // this is the escaped character
                         }
                     }
                 } else {

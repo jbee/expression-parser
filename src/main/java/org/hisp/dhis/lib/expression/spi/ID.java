@@ -24,6 +24,7 @@ public class ID {
         DataSetUID,
         ConstantUID,
         IndicatorUID,
+        OrganisationUnitUID,
         OrganisationUnitGroupUID,
         ProgramUID,
         ProgramIndicatorUID,

@@ -306,4 +306,44 @@ public interface ExpressionFunctions {
         return ZScore.value(ZScore.Mode.WFH, parameter, weight, gender);
     }
 
+    /*
+    Validation Rules special common functions
+     */
+
+    /**
+     * Is the current orgUnit a descendant of one of the ancestors?
+     *
+     * @param path of the current orgUnit
+     * @param checkedOrgUnits ancestors UIDs
+     * @return true, if it is a descendant of at least one of the given organisation units
+     */
+    default boolean orgUnit_ancestor(String path, List<String> checkedOrgUnits) {
+        return checkedOrgUnits.stream().anyMatch(path::contains);
+    }
+
+    /**
+     * Is the current orgUnit assigned to one of the data sets?
+     *
+     * @param sourceOfDataSets the data sets the current organisation unit is a source of
+     * @param checkedDataSets the data sets checked by the function
+     * @return true, if the two sets have a common UID, else false
+     */
+    default boolean orgUnit_dataset(List<String> sourceOfDataSets, List<String> checkedDataSets) {
+        return sourceOfDataSets.stream().anyMatch(checkedDataSets::contains);
+    }
+
+    /**
+     * Does the current orgUnit belong to one of the orgUnit groups?
+     *
+     * @param memberOfOrgUnitGroups the OU groups the current organisation unit is a member of
+     * @param checkedOrgUnitGroups the OU groups checked by the function
+     * @return true, if the two sets have a common UID, else false
+     */
+    default boolean orgUnit_group(List<String> memberOfOrgUnitGroups, List<String> checkedOrgUnitGroups) {
+        return memberOfOrgUnitGroups.stream().anyMatch(checkedOrgUnitGroups::contains);
+    }
+
+    default boolean orgUnit_program(List<String> memberOfPrograms, List<String> checkedPrograms) {
+        return memberOfPrograms.stream().anyMatch(checkedPrograms::contains);
+    }
 }

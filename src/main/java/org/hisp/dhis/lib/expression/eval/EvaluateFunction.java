@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
+import static org.hisp.dhis.lib.expression.spi.ExpressionData.*;
 
 /**
  * A {@link NodeInterpreter} that calculates the expression result value using a {@link ExpressionFunctions} to
@@ -101,6 +102,12 @@ class EvaluateFunction implements NodeInterpreter<Object> {
             case log10 -> functions.log10(evalToNumber(fn.child(0)));
             case removeZeros -> functions.removeZeros(evalToNumber(fn.child(0)));
 
+            // validation rule special "common" functions
+            case orgUnit_ancestor -> functions.orgUnit_ancestor(getExtraValue(ORG_UNIT_ANCESTOR, List.of("no-match")).get(0), evalToStrings(fn.children()));
+            case orgUnit_dataSet -> functions.orgUnit_dataset(getExtraValue(ORG_UNIT_DATASET), evalToStrings(fn.children()));
+            case orgUnit_group -> functions.orgUnit_group(getExtraValue(ORG_UNIT_GROUP), evalToStrings(fn.children()));
+            case orgUnit_program -> functions.orgUnit_program(getExtraValue(ORG_UNIT_PROGRAM), evalToStrings(fn.children()));
+
             // d2 functions
             case d2_addDays -> functions.d2_addDays(evalToDate(fn.child(0)), evalToNumber(fn.child(1)));
             case d2_ceil -> functions.d2_ceil(evalToNumber(fn.child(0)));
@@ -113,7 +120,7 @@ class EvaluateFunction implements NodeInterpreter<Object> {
                     functions.d2_extractDataMatrixValue(evalToString(fn.child(0)), evalToString(fn.child(1)));
             case d2_floor -> functions.d2_floor(evalToNumber(fn.child(0)));
             case d2_hasUserRole ->
-                    functions.d2_hasUserRole(evalToString(fn.child(0)), data.getSupplementaryValues().get("USER"));
+                    functions.d2_hasUserRole(evalToString(fn.child(0)), getExtraValue("USER"));
             case d2_hasValue -> functions.d2_hasValue(evalToVar(fn.child(0)));
             case d2_inOrgUnitGroup ->
                     functions.d2_inOrgUnitGroup(evalToString(fn.child(0)), data.getProgramRuleVariableValues().get("org_unit"), data.getSupplementaryValues());
@@ -150,6 +157,14 @@ class EvaluateFunction implements NodeInterpreter<Object> {
             // "not implemented yet"
             default -> functions.unsupported(fnInfo.getName());
         };
+    }
+
+    private List<String> getExtraValue(String key) {
+        return getExtraValue(key, List.of());
+    }
+
+    private List<String> getExtraValue(String key, List<String> defaultValue) {
+        return data.getSupplementaryValues().getOrDefault(key, defaultValue);
     }
 
     private Double evalAggFunction(Node<NamedFunction> fn) {

@@ -1,6 +1,8 @@
 package org.hisp.dhis.lib.expression;
 
+import org.hisp.dhis.lib.expression.ast.NamedFunction;
 import org.hisp.dhis.lib.expression.ast.Node;
+import org.hisp.dhis.lib.expression.ast.NodeType;
 import org.hisp.dhis.lib.expression.ast.VariableType;
 import org.hisp.dhis.lib.expression.eval.Evaluate;
 import org.hisp.dhis.lib.expression.eval.NodeValidator;
@@ -11,6 +13,7 @@ import org.hisp.dhis.lib.expression.syntax.Fragment;
 import org.hisp.dhis.lib.expression.syntax.Parser;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * Facade API for working with DHIS2 expressions.
@@ -79,6 +82,14 @@ public final class Expression {
         return Evaluate.collectDataItems(root);
     }
 
+    public boolean existsDataItems(Predicate<DataItem> matcher) {
+        return root.exists(node -> node.getType() == NodeType.DATA_ITEM && matcher.test(node.toDataItem()));
+    }
+
+    public boolean existsDataItems(DataItemType type, Predicate<DataItem> matcher) {
+        return existsDataItems(item -> item.getType() == type && matcher.test(item));
+    }
+
     public Set<String> collectProgramRuleVariableNames() {
         return Evaluate.collectVariableNames(root, VariableType.PROGRAM_RULE);
     }
@@ -117,6 +128,22 @@ public final class Expression {
      */
     public Set<ID> collectUIDs() {
         return Evaluate.collectUIDs(root);
+    }
+
+    public Set<ID> collectUIDsOrgUnitAncestor() {
+        return Evaluate.collectUIDs(root, NodeType.FUNCTION, NamedFunction.orgUnit_ancestor);
+    }
+
+    public Set<ID> collectUIDsOrgUnitDataSet() {
+        return Evaluate.collectUIDs(root, NodeType.FUNCTION, NamedFunction.orgUnit_dataSet);
+    }
+
+    public Set<ID> collectUIDsOrgUnitGroup() {
+        return Evaluate.collectUIDs(root, NodeType.FUNCTION, NamedFunction.orgUnit_group);
+    }
+
+    public Set<ID> collectUIDsOrgUnitProgram() {
+        return Evaluate.collectUIDs(root, NodeType.FUNCTION, NamedFunction.orgUnit_program);
     }
 
     public String describe(Map<String, String> displayNames) {
